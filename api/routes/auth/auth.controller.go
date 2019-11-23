@@ -93,3 +93,63 @@ func login(c *gin.Context) {
 		"token": token,
 	})
 }
+
+func register(c *gin.Context) {
+	db := c.MustGet("db").(*gorm.DB)
+
+	type RequestBody struct {
+		Username string `json:"username" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+
+	var body RequestBody
+	if err := c.BindJSON(&body); err != nil {
+		c.AbortWithStatus(400)
+		return
+	}
+
+	var exists User
+	if err := db.Where("username = ?", body.Username).First(&exists).Error; err == nil {
+		c.AbortWithStatus(409)
+		return
+	}
+
+	hash, hashErr := hash(body.Password)
+	if hashErr != nil {
+		c.AbortWithStatus(500)
+		return
+	}
+
+	user := User{
+		Username:     body.Username,
+		PasswordHash: hash,
+	}
+
+	db.NewRecord(user)
+	db.Create(&user)
+
+	serialized := user.Serialize()
+	token, _ := generateToken(serialized)
+	c.SetCookie("token", token, 60*60*24*7, "/", "", false, true)
+
+	c.JSON(200, common.JSON{
+		"user":  user.Serialize(),
+		"token": token,
+	})
+}
+
+func remove(c *gin.Context) {
+	db := c.MustGet("db").(*gorm.DB)
+	userRaw, ok := c.Get("user")
+
+	if !ok {
+		// user isn't logged in
+		c.AbortWithStatus(401)
+		return
+	}
+
+	user := userRaw.(User)
+
+	db.Delete(&user)
+	c.Status(204)
+}
