@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	"github.com/nireo/gin-boilerplate/api"
 	"github.com/nireo/go-blog-api/lib/middlewares"
 
 	"github.com/gin-gonic/gin"
@@ -30,6 +31,6 @@ func main() {
 	app.Use(database.Inject(db))
 	app.Use(middlewares.JWTMiddleware())
 	// when routes are written uncomment
-	// api.ApplyRoutes(app)
+	api.ApplyRoutes(app)
 	app.Run(":" + port) // listen to given port
 }

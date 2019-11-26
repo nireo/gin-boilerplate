@@ -31,7 +31,7 @@ func generateToken(data common.JSON) (string, error) {
 	date := time.Now().Add(time.Hour * 24 * 7)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user": data,
-		"exp": data.Unix(),
+		"exp":  date.Unix(),
 	})
 
 	// get path from root dir
@@ -71,7 +71,7 @@ func login(c *gin.Context) {
 		return
 	}
 
-	if !checkHash(body.Password, user.PasswordHash) {
+	if !checkHash(body.Password, user.Password) {
 		// invalid credentials
 		c.AbortWithStatus(401)
 		return
@@ -121,8 +121,8 @@ func register(c *gin.Context) {
 	}
 
 	user := User{
-		Username:     body.Username,
-		PasswordHash: hash,
+		Username: body.Username,
+		Password: hash,
 	}
 
 	db.NewRecord(user)
